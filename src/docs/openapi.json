@@ -6,7 +6,7 @@
     "description": "Endpoints de split checkout (single/group) y callback"
   },
   "servers": [
-    { "url": "http://localhost:3000", "description": "Local" }
+    { "url": "https://d132nmj5ubutr8.cloudfront.net", "description": "Prod" }
   ],
   "paths": {
     "/api/split/checkout": {
