@@ -1,78 +1,52 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "Clean Node Backend API",
+    "title": "Open Payments Split API",
     "version": "0.1.0",
-    "description": "API de ejemplo con Express y TypeScript (health + todos en memoria)"
+    "description": "Endpoints de split checkout (single/group) y callback"
   },
   "servers": [
     { "url": "http://localhost:3000", "description": "Local" }
   ],
   "paths": {
-    "/health": {
-      "get": {
-        "summary": "Estado del servicio",
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "status": { "type": "string", "example": "ok" },
-                    "uptime": { "type": "number", "example": 12.34 }
-                  },
-                  "required": ["status", "uptime"]
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/todos": {
-      "get": {
-        "summary": "Lista todos",
-        "responses": {
-          "200": {
-            "description": "Listado de todos",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "type": "array",
-                      "items": { "$ref": "#/components/schemas/Todo" }
-                    }
-                  },
-                  "required": ["data"]
-                }
-              }
-            }
-          }
-        }
-      },
+    "/api/split/checkout": {
       "post": {
-        "summary": "Crea un todo",
+        "summary": "Init split checkout (merchant + plataforma)",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/CreateTodo" }
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "customerAddress": { "type": "string" },
+                  "merchantAddress": { "type": "string" },
+                  "amountMinor": { "type": "integer" },
+                  "split": {
+                    "type": "object",
+                    "properties": {
+                      "merchantPct": { "type": "integer" },
+                      "platformPct": { "type": "integer" }
+                    }
+                  }
+                },
+                "required": ["customerAddress", "merchantAddress", "amountMinor"]
+              }
             }
           }
         },
         "responses": {
-          "201": {
-            "description": "Creado",
+          "200": {
+            "description": "URL de redirección al IdP y nonce",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": { "data": { "$ref": "#/components/schemas/Todo" } },
-                  "required": ["data"]
+                  "properties": {
+                    "redirectUrl": { "type": "string" },
+                    "nonce": { "type": "string" }
+                  },
+                  "required": ["redirectUrl", "nonce"]
                 }
               }
             }
@@ -81,103 +55,93 @@
         }
       }
     },
-    "/todos/{id}": {
+    "/api/op/callback": {
       "get": {
-        "summary": "Obtiene un todo por id",
+        "summary": "Callback tras consentimiento para crear outgoing payments",
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+          { "name": "interact_ref", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "name": "nonce", "in": "query", "required": true, "schema": { "type": "string" } }
         ],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "Pagos creados",
             "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": { "data": { "$ref": "#/components/schemas/Todo" } },
-                  "required": ["data"]
-                }
-              }
+              "application/json": { "schema": { "$ref": "#/components/schemas/CallbackResult" } }
             }
           },
-          "404": { "$ref": "#/components/responses/NotFound" }
+          "400": { "$ref": "#/components/responses/BadRequest" }
         }
-      },
-      "put": {
-        "summary": "Actualiza un todo",
-        "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
-        ],
+      }
+    },
+    "/api/split/group-checkout": {
+      "post": {
+        "summary": "Init group checkout (varios payers)",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/UpdateTodo" }
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "merchantAddress": { "type": "string" },
+                  "totalAmountMinor": { "type": "integer" },
+                  "payers": { "type": "array", "items": { "type": "string" } }
+                },
+                "required": ["merchantAddress", "totalAmountMinor", "payers"]
+              }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Actualizado",
+            "description": "Listado de redirecciones por payer",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": { "data": { "$ref": "#/components/schemas/Todo" } },
-                  "required": ["data"]
+                  "properties": {
+                    "merchant": { "type": "string" },
+                    "totalMinor": { "type": "integer" },
+                    "count": { "type": "integer" },
+                    "results": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/GroupInitResult" }
+                    }
+                  },
+                  "required": ["merchant", "totalMinor", "count", "results"]
                 }
               }
             }
           },
-          "400": { "$ref": "#/components/responses/BadRequest" },
-          "404": { "$ref": "#/components/responses/NotFound" }
-        }
-      },
-      "delete": {
-        "summary": "Elimina un todo",
-        "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
-        ],
-        "responses": {
-          "204": { "description": "Eliminado" },
-          "404": { "$ref": "#/components/responses/NotFound" }
+          "400": { "$ref": "#/components/responses/BadRequest" }
         }
       }
     }
   },
   "components": {
     "schemas": {
-      "Todo": {
+      "GroupInitResult": {
         "type": "object",
         "properties": {
-          "id": { "type": "string", "example": "1" },
-          "title": { "type": "string", "example": "Primera tarea" },
-          "completed": { "type": "boolean", "example": false },
-          "createdAt": { "type": "string", "format": "date-time" },
-          "updatedAt": { "type": "string", "format": "date-time" }
+          "payer": { "type": "string" },
+          "shareMinor": { "type": "integer" },
+          "redirectUrl": { "type": "string" },
+          "nonce": { "type": "string" }
         },
-        "required": ["id", "title", "completed", "createdAt", "updatedAt"]
+        "required": ["payer", "shareMinor", "redirectUrl", "nonce"]
       },
-      "CreateTodo": {
+      "CallbackResult": {
         "type": "object",
         "properties": {
-          "title": { "type": "string" },
-          "completed": { "type": "boolean" }
+          "status": { "type": "string" },
+          "payer": { "type": "string" },
+          "outgoingPayments": { "type": "array", "items": { "type": "object" } }
         },
-        "required": ["title"]
-      },
-      "UpdateTodo": {
-        "type": "object",
-        "properties": {
-          "title": { "type": "string" },
-          "completed": { "type": "boolean" }
-        }
+        "required": ["status", "outgoingPayments"]
       },
       "Error": {
         "type": "object",
-        "properties": {
-          "error": { "type": "string" }
-        },
+        "properties": { "error": { "type": "string" } },
         "required": ["error"]
       }
     },
@@ -185,12 +149,7 @@
       "BadRequest": {
         "description": "Solicitud inválida",
         "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
-      },
-      "NotFound": {
-        "description": "No encontrado",
-        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
       }
     }
   }
 }
-
