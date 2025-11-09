@@ -19,6 +19,21 @@ app.use(openPaymentsRouter);
 app.use(fxRouter);
 
 const { PORT = '3000' } = process.env;
+
+
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*'); // o tu dominio exacto si usas credenciales
+  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(204); // <- muy importante
+  }
+  next();
+});
+
+
+
 app.listen(Number(PORT), () => {
   console.log(`Open Payments Split (TS) on :${PORT}`);
 });
