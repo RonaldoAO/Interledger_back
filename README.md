@@ -125,16 +125,5 @@ curl -s -X PUT http://localhost:3000/todos/1 \
 curl -i -X DELETE http://localhost:3000/todos/1
 ```
 
-## Notas de arquitectura
 
-- `core` contiene la lógica de dominio (casos de uso, entidades) y no conoce detalles de infraestructura.
-- `infrastructure` implementa contratos (p. ej., repositorios). Aquí es en memoria, pero podrías reemplazar por base de datos.
-- `interfaces/http/controllers` contiene los controladores Express que adaptan HTTP al dominio.
-- `app.ts` crea la aplicación Express, configura middlewares (CORS, JSON, logs morgan) y registra rutas.
 
-La lógica de dominio se mantiene independiente; puedes cambiar la infraestructura o el framework HTTP sin modificar casos de uso.
-
-## ¿Qué es morgan?
-
-`morgan` es un middleware de logging para Express que registra cada petición HTTP (método, URL, estado, tiempo de respuesta, etc.).
-Sirve para depurar en desarrollo y observar el tráfico en producción. El formato se controla con la variable `LOG_FORMAT`.
