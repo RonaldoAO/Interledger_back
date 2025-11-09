@@ -1,4 +1,4 @@
-# Interledger Hackathon 2025 CDMX - VivePayments
+# Interledger Hackathon 2025 CDMX - VibePayments
 
 Backend HTTP en Node.js (Express + TypeScript) para habilitar flujos de pago sobre Open Payments: split checkout (comercio + plataforma), group checkout (varios pagadores) y un comparador de FX (ILP vs mercado).
 
