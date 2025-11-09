@@ -10,23 +10,12 @@ import { fxRouter } from './interfaces/http/routes/fx';
 const app = express();
 app.use(express.json());
 
-/* 🧠 Mueve este bloque aquí (ANTES de cualquier ruta) */
+
 app.use((req, res, next) => {
-  // Permisivo para pruebas; en prod pon tus orígenes explícitos
-  res.setHeader('Access-Control-Allow-Origin', '*');
-
-  // Refleja el método solicitado en el preflight y también lista todos
-  const reqMethod = req.headers['access-control-request-method'];
-  const allowMethods = 'GET,POST,PUT,PATCH,DELETE,OPTIONS';
-  res.setHeader('Access-Control-Allow-Methods', reqMethod ? `${reqMethod},OPTIONS` : allowMethods);
-
-  // Refleja los headers solicitados (o usa una lista conocida)
-  const reqHeaders = req.headers['access-control-request-headers'];
-  res.setHeader('Access-Control-Allow-Headers', reqHeaders || 'Content-Type, Authorization');
-
-  // (Opcional) cachea el preflight
+  res.setHeader('Access-Control-Allow-Origin', '*'); // en prod, pon tu dominio
+  res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,POST,PUT,PATCH,DELETE,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.setHeader('Access-Control-Max-Age', '600');
-
   if (req.method === 'OPTIONS') return res.sendStatus(204);
   next();
 });
