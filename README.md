@@ -1,129 +1,55 @@
-# Backend Node.js — Arquitectura Limpia con Express + TypeScript
+# Interledger Hackathon 2025 CDMX - VivePayments
 
-Proyecto backend HTTP en Node.js usando Express y TypeScript, con arquitectura limpia y capas separadas. Incluye una API funcional de `todos` (CRUD en memoria) y un endpoint de `health`.
+Backend HTTP en Node.js (Express + TypeScript) para habilitar flujos de pago sobre Open Payments: split checkout (comercio + plataforma), group checkout (varios pagadores) y un comparador de FX (ILP vs mercado).
 
-## Requisitos
+Este proyecto se desarrolló pensando en empresas que necesitan mejorar su logística de pagos. Identificamos un área de oportunidad en el turismo en México (reservas, tours compartidos, comisiones de plataforma y operaciones multi-divisa); desde ahí nació la idea: facilitar cobros divididos y comparar costos de conversión de forma simple y transparente.
 
-- Node.js >= 18
+## Funcionalidades
 
-## Estructura
+- Split checkout: divide un pago entre el comercio y una comisión de plataforma en una sola experiencia de compra.
+- Callback OP: finaliza los pagos luego del consentimiento del usuario (via Open Payments interactivo).
+- Group checkout: reparte una cuenta total entre múltiples pagadores y genera redirecciones individuales para completar el pago.
+- FX compare: compara la tasa efectiva de ILP frente a tasas de mercado para pagos cross-currency.
 
-```
-.
-├─ package.json
-├─ tsconfig.json
-├─ README.md
-├─ src/
-│  ├─ server.ts                  # Punto de arranque del servidor
-│  ├─ app.ts                     # Composición de capas (Express + casos de uso)
-│  ├─ config/
-│  │  └─ index.ts                # Configuración (puerto, entorno)
-│  ├─ core/
-│  │  ├─ entities/
-│  │  │  └─ todo.ts             # Entidad de dominio (tipo + helper)
-│  │  ├─ ports/
-│  │  │  └─ TodoRepository.ts   # Contrato del repositorio
-│  │  └─ use-cases/             # Casos de uso del dominio
-│  │     ├─ createTodo.ts
-│  │     ├─ listTodos.ts
-│  │     ├─ getTodo.ts
-│  │     ├─ updateTodo.ts
-│  │     └─ deleteTodo.ts
-│  ├─ infrastructure/
-│  │  └─ repositories/
-│  │     └─ inMemoryTodoRepository.ts  # Implementación del repositorio en memoria
-│  └─ interfaces/
-│     └─ http/
-│        └─ controllers/
-│           ├─ healthController.ts
-│           └─ todoController.ts
-└─ .gitignore
-```
+## Endpoints principales
 
-## Cómo correrlo
+- POST `/api/split/checkout`
+  - Inicializa un split (cliente → comercio + plataforma). Requiere `customerAddress`, `merchantAddress` y `amountMinor` (enteros en unidades menores). Responde con `redirectUrl` y `nonce`.
+- GET `/api/op/callback`
+  - Callback tras el consentimiento del usuario. Requiere `interact_ref` y `nonce`. Crea los outgoing payments y devuelve su resultado.
+- POST `/api/split/group-checkout`
+  - Inicializa un flujo donde varios pagadores cubren un total para un mismo comercio. Requiere `merchantAddress`, `totalAmountMinor` y arreglo de `payers`.
+- POST `/api/fx/compare`
+  - Compara la tasa ILP vs mercado para enviar un monto fijo (p. ej. 100 unidades mayores) desde `from` hacia `to` (códigos de divisa).
 
-1. Instalar dependencias:
+La documentación interactiva está disponible en `http://localhost:3000/docs` y el JSON en `http://localhost:3000/docs-json`.
 
-   ```bash
+## Setup rápido
+
+1) Instalar dependencias
+
    npm install
-   ```
 
-2. Desarrollo (TS en vivo):
+2) Configurar variables de entorno (ver `.env` de ejemplo)
 
-   ```bash
+- `OP_PLATFORM_WALLET_ADDRESS`: wallet address de la plataforma.
+- `OP_CLIENT_KEY_ID`: ID de la clave (Developer Keys).
+- `OP_PRIVATE_KEY_PEM`: ruta o contenido PEM de la clave privada.
+- `BASE_URL`: URL pública donde este backend recibe el callback.
+- `PORT`: puerto (por defecto 3000).
+
+3) Ejecutar en desarrollo
+
    npm run dev
-   ```
 
-3. Producción:
+4) Compilar y ejecutar en producción
 
-   ```bash
    npm run build
    npm start
-   ```
 
-4. Cambiar puerto (ejemplos):
+Verás en consola: `Open Payments Split (TS) on :3000`.
 
-   - PowerShell (Windows):
-     ```powershell
-     $env:PORT=4000; npm run dev
-     ```
-   - Linux/macOS (bash/zsh):
-     ```bash
-     PORT=4000 npm run dev
-     ```
+## Notas
 
-Verás en consola:
-
-```
-[server] Listening on http://localhost:3000
-```
-
-### Variables de entorno útiles
-
-- `PORT`: puerto del servidor (default `3000`).
-- `LOG_FORMAT`: formato de logs de morgan. Valores comunes: `dev` (por defecto), `combined`, `common`, `short`, `tiny`.
-  - PowerShell: `$env:LOG_FORMAT='combined'; npm run dev`
-  - bash/zsh: `LOG_FORMAT=combined npm run dev`
-
-### Documentación (Swagger UI)
-
-- UI: abrir `http://localhost:3000/docs`
-- JSON: `http://localhost:3000/docs-json`
-
-## API
-
-- Salud
-  - `GET /health` → `200 { status: "ok", uptime: <number> }`
-
-- Todos (en memoria)
-  - `GET /todos` → Lista todos.
-  - `GET /todos/:id` → Obtiene uno.
-  - `POST /todos` → Crea uno. Body JSON: `{ "title": string, "completed": boolean? }`.
-  - `PUT /todos/:id` → Actualiza título y/o estado. Body JSON parcial.
-  - `DELETE /todos/:id` → Elimina.
-
-### Ejemplos con curl
-
-```bash
-# Crear
-curl -s -X POST http://localhost:3000/todos \
-  -H "Content-Type: application/json" \
-  -d '{"title":"Primera tarea"}'
-
-# Listar
-curl -s http://localhost:3000/todos
-
-# Obtener por id
-curl -s http://localhost:3000/todos/1
-
-# Actualizar
-curl -s -X PUT http://localhost:3000/todos/1 \
-  -H "Content-Type: application/json" \
-  -d '{"completed": true}'
-
-# Eliminar
-curl -i -X DELETE http://localhost:3000/todos/1
-```
-
-
-
+- Se eliminaron los endpoints y el código de la API de "todos" para enfocar el proyecto en pagos y FX.
+- CORS está habilitado para facilitar pruebas; en producción limita el origen a tu dominio.
