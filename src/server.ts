@@ -12,15 +12,25 @@ app.use(express.json());
 
 /* 🧠 Mueve este bloque aquí (ANTES de cualquier ruta) */
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*'); // o 'http://localhost:8080'
-  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  // Permisivo para pruebas; en prod pon tus orígenes explícitos
+  res.setHeader('Access-Control-Allow-Origin', '*');
 
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(204); // <- esto resuelve el preflight
-  }
+  // Refleja el método solicitado en el preflight y también lista todos
+  const reqMethod = req.headers['access-control-request-method'];
+  const allowMethods = 'GET,POST,PUT,PATCH,DELETE,OPTIONS';
+  res.setHeader('Access-Control-Allow-Methods', reqMethod ? `${reqMethod},OPTIONS` : allowMethods);
+
+  // Refleja los headers solicitados (o usa una lista conocida)
+  const reqHeaders = req.headers['access-control-request-headers'];
+  res.setHeader('Access-Control-Allow-Headers', reqHeaders || 'Content-Type, Authorization');
+
+  // (Opcional) cachea el preflight
+  res.setHeader('Access-Control-Max-Age', '600');
+
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
   next();
 });
+
 
 /* Docs */
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(apiSpec));
