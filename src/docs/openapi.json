@@ -9,6 +9,64 @@
     { "url": "https://d132nmj5ubutr8.cloudfront.net", "description": "Prod" }
   ],
   "paths": {
+    "/api/fx/compare": {
+      "post": {
+        "summary": "Compara tasa ILP vs tasa de mercado",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "from": { "type": "string", "example": "USD" },
+                  "to": { "type": "string", "example": "EUR" }
+                },
+                "required": ["from", "to"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resultado de comparación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "from": { "type": "string" },
+                    "to": { "type": "string" },
+                    "sendMajor": { "type": "integer" },
+                    "sendMinor": { "type": "string" },
+                    "ilp": {
+                      "type": "object",
+                      "properties": {
+                        "rate": { "type": "number" },
+                        "debitAmount": { "type": "object" },
+                        "receiveAmount": { "type": "object" },
+                        "quoteId": { "type": "string" }
+                      }
+                    },
+                    "market": {
+                      "type": "object",
+                      "properties": {
+                        "rate": { "type": ["number", "null"] },
+                        "source": { "type": ["string", "null"] },
+                        "error": { "type": ["string", "null"] }
+                      }
+                    },
+                    "deltaPct": { "type": ["number", "null"] }
+                  },
+                  "required": ["from", "to", "sendMajor", "sendMinor", "ilp", "market"]
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" }
+        }
+      }
+    },
     "/api/split/checkout": {
       "post": {
         "summary": "Init split checkout (merchant + plataforma)",
