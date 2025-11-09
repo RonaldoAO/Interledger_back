@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Test CORS CloudFront</title>
+</head>
+<body>
+  <h2>Prueba de conexión CloudFront</h2>
+  <button id="btnTest">Probar conexión</button>
+  <pre id="output"></pre>
+
+  <script>
+    const url = "https://d132nmj5ubutr8.cloudfront.net/api"; // 👈 cambia si tu endpoint es otro
+    const output = document.getElementById("output");
+
+    document.getElementById("btnTest").onclick = async () => {
+      output.textContent = "Probando conexión...\n";
+
+      try {
+        const response = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer test-token"
+          },
+          body: JSON.stringify({ ping: true }),
+        });
+
+        output.textContent += `✅ Status: ${response.status}\n\n`;
+        output.textContent += "✅ Headers:\n";
+        response.headers.forEach((v, k) => {
+          output.textContent += `  ${k}: ${v}\n`;
+        });
+        output.textContent += "\n✅ Body:\n";
+        output.textContent += await response.text();
+      } catch (err) {
+        output.textContent += "❌ Error:\n" + err + "\n";
+      }
+    };
+  </script>
+</body>
+</html>

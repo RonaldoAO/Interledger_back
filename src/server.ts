@@ -1,6 +1,7 @@
 import express from 'express';
 import 'dotenv/config';
 import swaggerUi from 'swagger-ui-express';
+import cors from 'cors';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore - resolveJsonModule enabled
 import apiSpec from './docs/openapi.json';
@@ -9,6 +10,9 @@ import { fxRouter } from './interfaces/http/routes/fx';
 
 const app = express();
 app.use(express.json());
+// CORS primero en la cadena de middlewares
+app.use(cors());
+app.options('*', cors());
 
 // Docs
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(apiSpec));
@@ -20,21 +24,6 @@ app.use(fxRouter);
 
 const { PORT = '3000' } = process.env;
 
-
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*'); // o tu dominio exacto si usas credenciales
-  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(204); // <- muy importante
-  }
-  next();
-});
-
-
-
 app.listen(Number(PORT), () => {
   console.log(`Open Payments Split (TS) on :${PORT}`);
 });
-
